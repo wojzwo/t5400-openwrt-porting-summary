@@ -10,6 +10,7 @@ data bits      8
 parity         none
 stop bits      1
 flow control   none
+logic level    1.8 V (confirmed)
 router RX      GPIO20 (pull-up)
 router TX      GPIO21 (bias disabled)
 pinmux         blsp0_uart0 (DT label blsp1_uart1 — naming mismatch is expected)
@@ -41,10 +42,11 @@ Terminal example:
 picocom -b 115200 /dev/ttyUSB0
 ```
 
-Still unresolved / do not guess: exact UART I/O voltage (needs measurement).
-Don't copy this from a generic IPQ5018 reference design. The ground pad and
-physical pad order are no longer unresolved — confirmed by the marked photo
-above.
+UART I/O voltage: 1.8 V (confirmed by measurement — use a 1.8 V-capable
+USB-UART adapter; do not use a 3.3 V or 5 V adapter directly on these pads).
+Don't copy this from a generic IPQ5018 reference design otherwise. The
+ground pad and physical pad order are no longer unresolved — confirmed by
+the marked photo above.
 
 ## Stock U-Boot quick reference
 

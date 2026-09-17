@@ -18,7 +18,9 @@ rewrite, `mac` partition rewrite, `mtd18` rewrite, FOTA metadata changes.
 
 ## What you need
 
-- UART access + correctly wired USB-UART adapter (115200 8N1, no flow control)
+- UART access + correctly wired USB-UART adapter (115200 8N1, no flow
+  control, **1.8 V logic level — confirmed**; do not use a 3.3 V or 5 V
+  adapter directly on these pads)
 - Host on Ethernet + a TFTP server stock U-Boot can reach
 - OpenWrt initramfs/NAND-recovery image, factory UBI image, sysupgrade image
 - Local storage for the stock backup
