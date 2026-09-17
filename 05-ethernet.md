@@ -62,91 +62,85 @@ is used.
 
 ## MAC / identity
 
-```text
-eth1 / GMAC1     derived from DTS/NVMEM base
-eth0 / GMAC0     derived from DTS/NVMEM base
-LAN / br-lan     factory/base MAC, via standard board init (ucidef_set_interface_macaddr "lan")
-label identity   factory/base MAC, via standard board metadata
-```
+The stock firmware stores a single factory/base MAC address in the `mac`
+partition and derives the Ethernet interface addresses from it.
 
-No stock lower-netdev MAC rewrite and no custom bridge-MAC hook are needed —
-this is handled by standard OpenWrt board initialization only.
-
-### Why "derived from base" looks odd — it's not a whole-MAC `+N`
-
-Stock does **not** apply a conventional whole-48-bit MAC offset (like
-`mac-address-increment = <-1>`). Only **byte index 3** (the 4th octet) is
-touched, and LAN vs. WAN get *different* small integer offsets on that one
-byte, wrapping mod 256. Using generic bytes `B0:B1:B2:B3:B4:B5` for the
-factory base (see `01-hardware-inventory.md` — real per-device MACs are
-never reproduced in these docs):
+Stock mapping:
 
 ```text
-br-lan / base   B0:B1:B2: B3     :B4:B5   (unchanged)
-eth1 / LAN      B0:B1:B2:(B3 - 1):B4:B5
-eth0 / WAN      B0:B1:B2:(B3 - 2):B4:B5
+br-lan / bridge   factory base
+eth1 / LAN        factory base with byte 3 decremented by 1
+eth0 / WAN        factory base with byte 3 decremented by 2
 ```
-
-This isn't guessed from behavior — it's read directly out of the stock
-`router_msg` binary. Relevant evidence (full reverse-engineering trail kept
-outside the condensed docs — see the project's `zte-t5400-stock-ethernet-mac-derivation.md`
-and `zte-t5400-nv-io-mac-storage-analysis.md` for the complete walkthrough):
+Using `B0:B1:B2:B3:B4:B5` for the factory base:
 
 ```text
-binary    dump/partitions/extracted/mtd17_rootfs/filesystems/ubi_rootfs/usr/bin/router_msg
-format    ELF32 LSB, ARM EABI5, musl-linked, stripped
-disasm    llvm-objdump -d --triple=armv7-linux-gnueabi \
-            --start-address=0x113b4 --stop-address=0x11710 <binary>
-          (plain GNU objdump on the host couldn't decode the ARM machine
-          code at all — needed llvm-objdump for this)
+br-lan   B0:B1:B2:B3:B4:B5
+eth1     B0:B1:B2:(B3 - 1):B4:B5
+eth0     B0:B1:B2:(B3 - 2):B4:B5
 ```
+The stock implementation modifies only the fourth octet (mac[3]), with
+8-bit wraparound. This behavior was confirmed from the stock userspace and
+cross-checked against live interface addresses.
 
-Key symbol/string offsets inside that binary:
+The stock MAC-reading path returns the same six-byte factory value for the
+Ethernet-related lookups. The LAN/WAN differentiation is applied later by
+stock userspace.
+
+OpenWrt represents the Ethernet addresses through the generic `mac-base`
+NVMEM mechanism:
+```text
+eth1 / GMAC1   derived from the factory base
+eth0 / GMAC0   derived from the factory base
+LAN / br-lan   factory/base MAC, set by standard board initialization
+label MAC      factory/base MAC
+```
+No custom OpenWrt MAC-derivation or lower-netdev rewrite code is required.
+
+mac-base uses normal 48-bit MAC arithmetic rather than the stock
+byte-3-only operation. For the validated T5400 unit both methods produce the
+same addresses. They can differ only if the subtraction crosses the byte-3
+underflow boundary.
+
+#### Reproducing the stock analysis
+
+To independently reproduce the stock MAC-address analysis, inspect these
+binaries from the stock root filesystem:
 
 ```text
-0x0556  lib_read_mac_from_flash   (reads the 6-byte base MAC)
-0x1974  set_hw_addr               (the function that does the byte-3 math)
-0x19cd  "bridge"
-0x19d4  "lan"
-0x19d8  "lan_wan"
+/usr/bin/router_msg
+/usr/bin/nv_io
+/usr/lib/libzte_router.so
+/usr/lib/libzte_encrypt.so
 ```
-
-The actual transform, once the selector string is matched (`bridge` / `lan`
-/ `lan_wan`), boils down to these lines of the `lan` (LAN/eth1) case:
-
-```asm
-115c4: 05dd3027   ldrbeq  r3, [sp, #0x27]   ; load base MAC byte 3
-115c8: 02433001   subeq   r3, r3, #1        ; byte3 -= 1  (8-bit wrap)
-115f0: e5cd3027   strb    r3, [sp, #0x27]   ; store back into the result
-```
-
-`lan_wan` (eth0/WAN) is the same shape with `#2` instead of `#1`. `bridge`
-skips the subtraction entirely — `br-lan` gets the untouched base. The
-result is then formatted and applied with `ifconfig <iface> hw ether <mac>`
-via a plain `system()` call — this isn't just a log message, it's the code
-that actually sets the interface address.
-
-Separately, the base MAC itself comes from a `nv_io` CLI/library
-(`lib_read_mac_from_flash`) that reads `/dev/mtd16`. Reverse-engineering the
-read path found it **ignores the `eth0`/`eth1`/`wifi` index argument
-entirely** — all three logical reads return the same 6 bytes at offset 0 of
-the first good eraseblock. In other words, `nv_io` itself doesn't produce
-different addresses per interface; all of the LAN/WAN differentiation
-happens later, in `router_msg`'s byte-3 subtraction.
-
-We deliberately don't reproduce the full disassembly/decompile here for
-simplicity — the two files named above carry the complete instruction-level
-walkthrough, string tables, and cross-checks (including live ARP
-confirmation) if this ever needs to be re-derived or ported to a different
-captured unit.
+`router_msg` contains the interface-specific MAC derivation logic, while
+`nv_io` and the associated ZTE libraries implement access to the stored
+factory MAC data.
 
 ## Performance reference (stock NSS/ECM vs. plain upstream DSA)
 
-Stock NSS/ECM can route Gigabit at close to line rate (~946.7–946.9 Mbit/s)
-with materially lower CPU cost, but that's a vendor-stack performance
-feature, not a correctness requirement for the upstream port. Measured
-upstream numbers: ~800 Mbit/s per physical socket bidirectional, up to
-~937 Mbit/s through the full QCA8337 → GMAC1 → bridge → GMAC0 path.
+iperf3 routed-forwarding tests between two separate endpoint machines in
+different IP subnets, with the T5400 forwarding the traffic between them. The
+router itself was not an iperf3 endpoint. `single-*` uses one TCP stream and
+`four-*` uses four parallel streams; each scenario ran for ~40 s including
+setup. The same router and test endpoints were used for both firmware states.
+See `evidence/perf_summary_openwrt_vs_stock.md` for the full comparison including
+both Wi-Fi bands.
+
+| Scenario | Stock recv Mb/s | Stock send Mb/s | OpenWrt recv Mb/s | OpenWrt send Mb/s | OpenWrt retransmits |
+|---|---:|---:|---:|---:|---:|
+| single-up | 946.7 | 946.7 | 501.6 | 501.6 | – |
+| single-down | 946.8 | 947.0 | 383.8 | 383.7 | 0 |
+| four-up | 946.9 | 946.9 | 344.3 | 344.2 | – |
+| four-down | 946.8 | 947.3 | 316.6 | 316.7 | 84 |
+
+Stock NSS/ECM routes at close to line rate using a hardware/firmware
+forwarding accelerator; that's a vendor-stack feature, not a correctness
+requirement for the upstream port, and reproducing it is out of scope here.
+Without NSS/ECM, the upstream Linux forwarding path is CPU-limited on the two
+Cortex-A53 cores; the four-stream cases are slower than the single-stream cases
+while the physical links remain Gigabit. These are measured OpenWrt numbers,
+not projections.
 
 ## Validation summary
 

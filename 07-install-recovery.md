@@ -1,7 +1,8 @@
 # ZTE T5400 — Installation, Backup and Recovery
 
 Accepted persistent design: OpenWrt lives **only** in `mtd17 / rootfs`.
-Normal install/upgrade never touches the second stock slot (`mtd18`),
+All supported persistent OpenWrt writes target `mtd17 / rootfs` only. The
+installation and sysupgrade paths do not modify the second stock slot (`mtd18`),
 bootloader partitions, or factory data (see `03-flash-layout.md`).
 
 ## Safety classes
@@ -13,8 +14,8 @@ bootloader partitions, or factory data (see `03-flash-layout.md`).
 | `DESTRUCTIVE FIRST INSTALL` | rewrites `mtd17` only | guarded factory-image write |
 | `NORMAL UPDATE` | standard OpenWrt maintenance | `sysupgrade` / `sysupgrade -n` |
 
-Never add to the normal path: `saveenv`, MIBIB/BOOTCONFIG/APPSBL/ART/TRAINING
-rewrite, `mac` partition rewrite, `mtd18` rewrite, FOTA metadata changes.
+The normal path does not require `saveenv` or any
+MIBIB/BOOTCONFIG/APPSBL/ART/TRAINING, `mac`, `mtd18`, or FOTA metadata rewrite.
 
 ## What you need
 
@@ -82,7 +83,9 @@ md.b 0x44000000 4          # expect FIT magic d0 0d fe ed
 Then just power-cycle and let the unmodified `bootcmd=bootipq` run — no
 manual TFTP or U-Boot command should be required from this point on. Root
 selector is `root=/dev/ubiblock0_1`, mounting `/rom` (SquashFS ro) and
-`/overlay` (UBIFS rw) under an overlayfs `/`.
+`/overlay` (UBIFS rw) under an overlayfs `/`. Here `ubiblock0_1` means UBI
+device 0, volume 1 inside `mtd17`; it is unrelated to the separate `rootfs_1`
+MTD partition (`mtd18`).
 
 ## 6. Persistent acceptance checklist
 
@@ -121,9 +124,10 @@ so this works even if the persistent system is completely broken.
 
 ## 9. Return to stock (DESTRUCTIVE RECOVERY, restores mtd17 only)
 
-Hardware-validated: writing a user's own backed-up `mtd17` back reproduces
-the stock 5-volume UBI, `mtd18` stays untouched, and the router boots normal
-stock Linux again — and can subsequently be reinstalled with OpenWrt.
+Hardware-validated end to end: writing a user's own backed-up `mtd17` back
+reproduces the stock 5-volume UBI, `mtd18` stays untouched, the router cold-boots
+normal stock Linux with Ethernet and Wi-Fi operational, and a clean OpenWrt
+installation can then be performed again through the same `mtd17`-only path.
 
 1. Boot the RAM recovery environment via UART/TFTP.
 2. Transfer the backed-up stock `mtd17` image to the router and verify its

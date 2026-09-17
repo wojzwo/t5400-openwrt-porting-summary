@@ -83,6 +83,10 @@ stock mtd17 UBI:    kernel / wifi_fw / bt_fw / ubi_rootfs / web
 OpenWrt mtd17 UBI:  kernel / rootfs / rootfs_data
 ```
 
+Naming trap: the Linux root device `/dev/ubiblock0_1` is UBI device 0,
+volume 1 (`rootfs`) inside `mtd17`. It is **not** the separate NAND partition
+named `rootfs_1` (`mtd18`).
+
 The captured stock `rootfs` and `rootfs_1` had different raw-image hashes but
 matching hashes per logical volume — i.e. same firmware payload, not
 byte-identical raw UBI images. A recovery/restore procedure must restore a

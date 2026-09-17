@@ -16,14 +16,18 @@ at the repo root.
 
 `photos/` — board and component photos referenced by the docs above.
 `evidence/` — supplementary raw evidence (stock partition table, U-Boot
-command/env captures, stock forwarding-performance numbers) backing the
-condensed docs; not required reading, kept for reproducibility.
+command/env captures, and stock/OpenWrt forwarding-performance measurements)
+backing the condensed docs; not required reading, kept for reproducibility.
 
 ## Status
 
-Validated end to end: first install, persistent boot, sysupgrade (clean and
-config-preserving), Ethernet (all 4 ports), both Wi-Fi radios, LEDs/buttons.
-Open items: a full return-to-stock drill with confirmed stock
-Ethernet/Wi-Fi operation before reinstalling OpenWrt, and the hardware
-unknowns listed in [01-hardware-inventory.md](01-hardware-inventory.md)
-(power/regulator BOM, UART voltage). USB support itself is deferred, not unknown — see the USB note in `01-hardware-inventory.md`.
+Validated end to end on real hardware: first install, persistent cold boot,
+clean and config-preserving sysupgrade, Ethernet (all 4 ports), both Wi-Fi
+radios, LEDs/buttons, and a full return-to-stock recovery followed by a clean
+OpenWrt reinstall. UART pad order and 1.8 V logic level are also confirmed.
+
+USB support is deliberately deferred. Qualcomm NSS/ECM forwarding offload is
+not available upstream for `qualcommax`, so routed throughput under OpenWrt is
+lower than the stock firmware's accelerated datapath; measured comparisons are
+kept under `evidence/`. Remaining hardware-documentation unknowns are listed in
+[01-hardware-inventory.md](01-hardware-inventory.md).

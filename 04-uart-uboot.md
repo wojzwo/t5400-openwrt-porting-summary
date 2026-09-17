@@ -23,8 +23,13 @@ yellow wire   router RX / GPIO20
 blue wire     router TX / GPIO21
 black wire    ground
 ```
+<img src="photos/board-top_marked.jpg"
+     alt="ZTE T5400 main board with UART pad location marked"
+     width="750">
 
-![ZTE T5400 UART pads, RX/TX/GND marked](photos/uart-closeup_marked.jpg)
+<p><em>Figure 1. ZTE T5400 main board with the UART pad location marked. UART: 115200 8N1, no flow control, 1.8 V logic.</em></p>
+
+
 
 Connect a USB-UART adapter **crosswise**:
 
@@ -33,8 +38,11 @@ USB-UART TX  -> router RX (yellow)
 USB-UART RX  <- router TX (blue)
 USB-UART GND -> router ground (black)
 ```
+<img src="photos/uart-closeup_marked.jpg"
+     alt="Close-up of ZTE T5400 UART pads with RX, TX and GND marked"
+     width="750">
 
-**Never** connect the USB-UART adapter's own power output to the router.
+<p><em>Figure 2. Close-up of the UART pads with RX, TX and GND marked. Yellow wire: router RX; blue wire: router TX; black wire: GND.</em></p>
 
 Terminal example:
 
@@ -42,11 +50,13 @@ Terminal example:
 picocom -b 115200 /dev/ttyUSB0
 ```
 
-UART I/O voltage: 1.8 V (confirmed by measurement — use a 1.8 V-capable
-USB-UART adapter; do not use a 3.3 V or 5 V adapter directly on these pads).
-Don't copy this from a generic IPQ5018 reference design otherwise. The
-ground pad and physical pad order are no longer unresolved — confirmed by
-the marked photo above.
+UART logic level is 1.8 V, confirmed by measurement.
+
+Use a 1.8 V-compatible USB-UART adapter. Connect the adapter ground
+to any confirmed board ground point; the UART does not require a
+dedicated local ground pad.
+
+Do not drive the router RX pad directly with a 3.3 V or 5 V UART signal.
 
 ## Stock U-Boot quick reference
 
@@ -66,9 +76,10 @@ Secure boot             disabled on captured unit
 ```
 
 The captured unit has an invalid environment CRC (erased `0xff` APPSBLENV), so
-it always runs on **compiled defaults**, not a saved environment. `setenv`
-only changes the in-memory environment; never run `saveenv` as part of a
-normal workflow — it's not required and is intentionally avoided.
+it runs on **compiled defaults**, not a saved environment. `setenv` changes
+only the in-memory environment. There is no need to run `saveenv` for the
+installation or recovery flow; persistent U-Boot environment changes are not
+part of the port.
 
 ### Bootloader storage on NAND
 
@@ -87,8 +98,8 @@ setenv serverip <tftp-server-ip>
 setenv ipaddr <router-ip>
 ```
 
-Transient only — do **not** follow with `saveenv`. A power cycle restores the
-compiled defaults anyway.
+These values only need to be changed transiently. You do not need to run
+`saveenv`; a power cycle restores the compiled defaults.
 
 Download to RAM:
 
@@ -129,9 +140,12 @@ stock U-Boot bootipq
 ```
 
 Stock U-Boot reads and boots the Linux-written OpenWrt UBI/FIT through its
-unmodified compiled default `bootcmd=bootipq`. No persistent `saveenv`, MIBIB
-rewrite, or bootconfig rewrite is needed — validated across first install,
-`sysupgrade -n`, config-preserving `sysupgrade`, and a true cold power-cycle.
+unmodified compiled default `bootcmd=bootipq`. No persistent U-Boot environment,
+MIBIB, or BOOTCONFIG changes are needed — validated across first install,
+`sysupgrade -n`, config-preserving `sysupgrade`, and true cold power-cycles.
+
+`/dev/ubiblock0_1` means UBI device 0, volume 1 (`rootfs`) inside `mtd17`; it
+does **not** refer to the separate `rootfs_1` MTD partition (`mtd18`).
 
 ### Stock UBI volumes visible to U-Boot (for comparison)
 

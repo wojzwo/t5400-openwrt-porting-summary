@@ -5,8 +5,8 @@
 1. **Preserve hardware truth, not vendor software shape.** Document what the
    silicon actually does, not the QSDK abstraction over it.
 2. **Prefer standard upstream subsystems.** qca8k/DSA over vendor SSDK,
-   standard ath11k over CNSS/QSDK WLAN stack, standard `nand_do_upgrade`
-   over a custom flashing tool.
+   standard ath11k instead of the vendor CNSS/QSDK WLAN stack, and standard
+   `nand_do_upgrade` over a custom flashing tool.
 3. **Keep the board description minimal.** Only enable what's physically
    populated; don't carry over every alternate-BOM node from the stock DTS.
 4. **Keep identity separate from calibration.** MAC (NVMEM) / board data
@@ -67,7 +67,9 @@ stock U-Boot bootipq
 
 Validated across: first install → cold boot → `sysupgrade -n` → cold boot →
 config-preserving `sysupgrade` → true post-upgrade power-cycle boot. No
-`saveenv`, MIBIB rewrite, or bootconfig rewrite required at any point.
+persistent U-Boot environment, MIBIB, or BOOTCONFIG changes are required.
+`/dev/ubiblock0_1` is UBI device 0, volume 1 inside `mtd17`; it must not be
+confused with the separate `rootfs_1` partition (`mtd18`).
 
 ## Sysupgrade (after the first install)
 
@@ -99,12 +101,13 @@ rootfs_1 (mtd18), openwrt_data, cfg-param, log, oops, fota, reserved`.
 
 ## Validation state
 
-Functionally validated end to end: first install, persistent cold boot,
-config-preserving and clean sysupgrade, Ethernet (all 4 ports), both WLAN
-radios, LEDs/buttons. Open items to close before calling the port fully
-complete: full return-to-stock drill (restored stock userspace with
-confirmed Ethernet/WLAN operation before reinstalling OpenWrt — the restore
-mechanism itself is validated, just not that last acceptance step), and the
-hardware unknowns listed in `01-hardware-inventory.md` (power/regulator
-BOM, UART voltage). USB is a separate, deliberate deferral rather than an
-unknown — see the USB note in `01-hardware-inventory.md`.
+Functionally validated end to end on real hardware: first install, persistent
+cold boot, config-preserving and clean sysupgrade, Ethernet (all 4 ports), both
+WLAN radios, LEDs/buttons, and a full return-to-stock recovery followed by a
+clean OpenWrt reinstall. UART pad order and 1.8 V logic level are confirmed.
+
+USB remains a deliberate deferral. Qualcomm NSS/ECM forwarding offload is not
+available upstream for `qualcommax`; the measured performance gap to stock is
+therefore expected and documented in `evidence/perf_summary_openwrt_vs_stock.md`.
+Remaining hardware-documentation unknowns are listed in
+`01-hardware-inventory.md`.

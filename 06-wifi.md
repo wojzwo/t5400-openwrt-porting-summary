@@ -28,9 +28,9 @@ Qualcomm IPQ5018
 | Stock BDF source | `bdwlan.b24` | `qcn9000/bdwlan.ba0` |
 | BDF size | 0x20000 (131072 B) | 0x20000 (131072 B) |
 | ART offset / length | `0x1000` / `0x20000` | `0x26800` / `0x20000` |
-| Primary MAC | factory/base (offset 0), via NVMEM | factory/base **+10 on byte index 3** (mod 256), via NVMEM |
+| Primary MAC | factory/base (offset 0), via NVMEM | factory/base **+10 at the fourth octet (`mac[3]`)**, via generic NVMEM MAC arithmetic |
 | Firmware package | `ath11k-firmware-ipq5018` | `ath11k-firmware-qcn9074` + `kmod-ath11k-pci` |
-| Board-data package | `board-zte_t5400.ipq5018` | `board-zte_t5400.qcn9074`  |
+| OpenWrt BDF source | `board-zte_t5400.ipq5018` | `board-zte_t5400.qcn9074`  |
 | Functional state | validated | validated |
 
 Both radios use `qcom,calibration-variant = "ZTE-T5400"` and the same
@@ -77,18 +77,22 @@ endef
 TARGET_DEVICES += zte_t5400
 ```
 
-This is correct and matches the "Final contract" table above — the apparent
-mismatch was just that the earlier version of this table collapsed
-everything into a single "Final package" row (`ipq-wifi-zte_t5400`). That
-row was incomplete, not wrong: `ipq-wifi-zte_t5400` is real, but it's only
-the **board-data (BDF/regulatory) package**, shared by both radios. Four
-packages are needed in total for full Wi-Fi function:
+This is correct and matches the "Final contract" table above — `ipq-wifi-zte_t5400`
+is a single OpenWrt **package** (`package/firmware/ipq-wifi/Makefile`'s
+`generate-ipq-wifi-package,zte_t5400,...` macro generates exactly one
+package for the device), but that package installs **two distinct BDF
+files**, one per radio — the package is shared, the board-data content is
+not. Confirm against the "Stock BDF source" row above: `bdwlan.b24` for the
+integrated 2.4 GHz radio vs. `qcn9000/bdwlan.ba0` for the external QCN9024
+— different source files with different payloads, packaged together only
+for OpenWrt install-unit convenience. Four packages are needed in total for
+full Wi-Fi function:
 
 ```text
 ath11k-firmware-ipq5018   integrated 2.4 GHz radio firmware
 kmod-ath11k-pci           PCI glue driver — needed because QCN9024 is PCIe-attached
 ath11k-firmware-qcn9074   external 5 GHz radio firmware
-ipq-wifi-zte_t5400        board-data (BDF) package, used by BOTH radios
+ipq-wifi-zte_t5400        board-data package (contains a distinct BDF per radio)
 ```
 
 `IMAGE_SIZE := 61440k` = 60 MiB, matching the `mtd17` write boundary in
@@ -116,7 +120,7 @@ ipq-wifi-zte_t5400        board-data (BDF) package, used by BOTH radios
 
       /*
        * Stock derives the primary chip2 WLAN MAC by
-       * incrementing factory MAC byte 3 by 10 modulo 256.
+       * incrementing factory MAC fourth octet (`mac[3]`) by 10 modulo 256.
        */
       nvmem-cells = <&macaddr_mac_0 0x0a0000>;
       nvmem-cell-names = "mac-address";
@@ -146,26 +150,29 @@ ipq-wifi-zte_t5400        board-data (BDF) package, used by BOTH radios
 `02-gpio-inventory.md`. `reg = <0x00010000 ...>` matches PCI device
 `17cb:1104` on the pcie0 root port.
 
-### How `<&macaddr_mac_0 <offset>>` encodes the byte-3 increment
+### How `<&macaddr_mac_0 <offset>>` encodes the fourth-octet offset
 
 `macaddr_mac_0` is a "mac-base" style nvmem provider: the second cell of the
 phandle reference is not a normal nvmem argument, it's a **signed 48-bit
 add value applied to the base MAC as a big integer**. Because a MAC is
-6 bytes (`B0 B1 B2 B3 B4 B5`), adding a value shifted left by 16 bits lands
-exactly on byte index 3:
+6 bytes (`B0 B1 B2 B3 B4 B5`), adding a value shifted left by 16 bits is aligned
+to the fourth octet (`mac[3]`):
 
 ```text
-0x0a0000  =  0x0a << 16  ->  adds 0x0a (= 10) to byte index 3, with carry
+0x0a0000  =  0x0a << 16  ->  adds 0x0a (= 10) at mac[3], using normal 48-bit carry
 0         =  0            ->  no change (integrated radio keeps the factory MAC as-is)
 ```
 
-This exactly reproduces the stock ZTE VAP/BSSID allocation algorithm
-documented from `libzte_wlan.so`'s `zte_wlan_wifi_multi_bssid_get()`:
-`bssid[3] = base[3] + ssid_index`, plus an extra `+8` on byte 3 for any SSID
-served by the second (external, chip2) radio. For the QCN9024 primary AP
-that's SSID index 2 within the combined chip1+chip2 numbering, so
-`2 + 8 = 10` — which is exactly the `0x0a0000` constant above. The
-integrated radio's primary SSID is index 0, hence increment `0`.
+The offset matches the stock ZTE VAP/BSSID allocation on the tested unit. The
+stock algorithm, documented from `libzte_wlan.so`'s
+`zte_wlan_wifi_multi_bssid_get()`, updates only `bssid[3]` modulo 256:
+`bssid[3] = base[3] + ssid_index`, plus an extra `+8` for SSIDs served by the
+second (external, chip2) radio. For the QCN9024 primary AP, `2 + 8 = 10`, hence
+the `0x0a0000` offset; the integrated radio's primary SSID uses offset `0`.
+
+The generic `mac-base` provider does normal 48-bit arithmetic rather than
+stock's isolated-octet wrap. It therefore diverges only if `mac[3] + 10`
+crosses `0xff`; the tested unit is not near that boundary.
 
 ## Calibration policy
 
@@ -199,7 +206,7 @@ transport             PCIe Gen2 x2, PCI 17cb:1104, PERST on GPIO15
 ath11k identity         QCN9074 hw1.0
 board selector          bus=pci,qmi-chip-id=0,qmi-board-id=255,variant=ZTE-T5400
 calibration              0:ART, offset 0x26800, length 0x20000
-MAC                      factory/base +10 on byte index 3 (mod 256), via NVMEM
+MAC                      factory/base +10 at mac[3] via generic NVMEM MAC arithmetic
 ```
 
 ## Functional acceptance
@@ -208,27 +215,31 @@ Both radios validated: WCSS remoteproc running, ath11k probed with correct
 hw1.0 profile, QMI board ID 0xff, PHY registered, RF/AP operation confirmed
 on both bands.
 
-## Stock performance reference (baseline, not yet OpenWrt/ath11k numbers)
+## Performance reference (stock vs. OpenWrt/ath11k)
 
-iperf3-style forwarding tests against stock firmware, single client and four
-parallel clients, up (client→router) and down (router→client), ~40 s per
-scenario. This is a **stock baseline for comparison**, not a validated
-upstream ath11k result — treat any OpenWrt figure that looks much lower as
-expected until real upstream throughput numbers are captured.
+iperf3 routed-forwarding tests between two separate endpoint machines in
+different IP subnets, with the T5400 forwarding traffic between them. The
+router itself was not an iperf3 endpoint. `single-*` uses one TCP stream and
+`four-*` uses four parallel streams; the same router and test endpoints were
+used for both firmware states. OpenWrt numbers below are measured results, not
+projections — see `evidence/perf_summary_openwrt_vs_stock.md` for the full
+comparison including Ethernet.
 
-| Band | Scenario | Receiver Mb/s | Sender Mb/s | Retransmits |
-|---|---|---:|---:|---:|
-| 5 GHz (QCN9024) | single-up | 942.5 | 942.6 | – |
-| 5 GHz (QCN9024) | single-down | 839.8 | 839.6 | 3 |
-| 5 GHz (QCN9024) | four-up | 922.2 | 922.2 | – |
-| 5 GHz (QCN9024) | four-down | 786.2 | 786.4 | 0 |
-| 2.4 GHz (integrated) | single-up | 330.9 | 331.0 | – |
-| 2.4 GHz (integrated) | single-down | 205.0 | 205.1 | 4 |
-| 2.4 GHz (integrated) | four-up | 283.1 | 283.0 | – |
-| 2.4 GHz (integrated) | four-down | 209.5 | 209.7 | 0 |
+| Band | Scenario | Stock recv Mb/s | Stock send Mb/s | OpenWrt recv Mb/s | OpenWrt send Mb/s | OpenWrt retransmits |
+|---|---|---:|---:|---:|---:|---:|
+| 5 GHz (QCN9024) | single-up | 942.5 | 942.6 | 270.4 | 270.4 | – |
+| 5 GHz (QCN9024) | single-down | 839.8 | 839.6 | 266.0 | 266.0 | 42 |
+| 5 GHz (QCN9024) | four-up | 922.2 | 922.2 | 285.1 | 285.3 | – |
+| 5 GHz (QCN9024) | four-down | 786.2 | 786.4 | 163.7 | 163.7 | 231 |
+| 2.4 GHz (integrated) | single-up | 330.9 | 331.0 | 203.1 | 203.1 | – |
+| 2.4 GHz (integrated) | single-down | 205.0 | 205.1 | 182.5 | 182.3 | 53 |
+| 2.4 GHz (integrated) | four-up | 283.1 | 283.0 | 254.1 | 255.1 | – |
+| 2.4 GHz (integrated) | four-down | 209.5 | 209.7 | 143.4 | 143.1 | 399 |
 
-`single-*` = one client stream; `four-*` = four parallel client streams.
-"up" = client sending to the router (router receiving), "down" = router
-sending to the client. Note 5 GHz single-down is markedly lower than
-single-up and four-up — worth re-checking once equivalent OpenWrt numbers
-exist, rather than assuming it's measurement noise.
+`up` and `down` are the benchmark suite's two opposite routed directions; in
+both cases the T5400 forwards traffic between the two endpoint machines.
+OpenWrt numbers have no NSS/ECM hardware forwarding offload (not implemented
+upstream, same as Ethernet), so the gap vs. stock is expected. Stock 5 GHz
+single-down being markedly lower than stock single-up/four-up is a
+stock-firmware characteristic observed while capturing the baseline — not
+something this port needs to explain or fix.

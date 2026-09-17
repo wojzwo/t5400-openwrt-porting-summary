@@ -21,8 +21,7 @@ Every GPIO with a currently established board-level function.
 | 39 | QCA8337 reset | output reset | active-low | QCA8337 |
 | 44 | red status LED | output | active-high | status LED |
 
-USB-C GPIOs (Type-C CC/orientation/VBUS control) are intentionally omitted
-here — USB support is deferred in this port (see `08-openwrt-porting.md`).
+
 
 ## LEDs and buttons
 

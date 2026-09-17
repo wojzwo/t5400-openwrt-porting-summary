@@ -51,7 +51,7 @@ UART                    serial@78af000 / ttyMSM0 / 115200 8N1
 | H | Ethernet magnetics | marking `DG36002-1G` | exact mfr/pinout unknown |
 | I | LEDs | discrete | white = GPIO1 (active-high), red = GPIO44 (active-high) |
 | J | Buttons | discrete | RESET = GPIO32, WPS = GPIO38 (both active-low) |
-| K | UART | IPQ5018 BLSP UART | GPIO20 RX / GPIO21 TX, 115200 8N1 |
+| K | UART | IPQ5018 BLSP UART | GPIO20 RX / GPIO21 TX, 115200 8N1 1.8V |
 
 USB-C hardware (Type-C CC controller etc.) is intentionally omitted here — see the note under "Block topology" below.
 
@@ -87,18 +87,6 @@ Linux / ath11k profile     QCN9074 hw1.0
 
 These four names describe different layers of the same radio and must not be
 used interchangeably in docs/commit messages.
-
-## Known unknowns (do not fill in from a generic IPQ5018 reference design)
-
-- UART I/O voltage (needs measurement)
-- complete power-input electrical spec, regulator/PMIC inventory
-- exact manufacturer/internal topology of the `DG36002-1G` magnetics
-- complete RF front-end (PA/LNA/filter) inventory, both bands
-- bottom-side board photo / test-pad map
-
-The UART ground pad and final pad order are no longer unresolved — see
-`photos/uart-closeup_marked.jpg`, which marks RX (yellow), TX (blue) and
-GND (black) directly on the board.
 
 Device-unique secrets (real MAC addresses, raw calibration/ART contents) are
 intentionally not reproduced in any of these docs.
