@@ -1,0 +1,28 @@
+=== IPQ5018 BDF files ===
+dump/partitions/extracted/mtd17_rootfs/filesystems/wifi_fw/bdwlan.b10 131072
+dump/partitions/extracted/mtd17_rootfs/filesystems/wifi_fw/bdwlan.b20 131072
+dump/partitions/extracted/mtd17_rootfs/filesystems/wifi_fw/bdwlan.b21 131072
+dump/partitions/extracted/mtd17_rootfs/filesystems/wifi_fw/bdwlan.b22 131072
+dump/partitions/extracted/mtd17_rootfs/filesystems/wifi_fw/bdwlan.b23 131072
+dump/partitions/extracted/mtd17_rootfs/filesystems/wifi_fw/bdwlan.b24 131072
+dump/partitions/extracted/mtd17_rootfs/filesystems/wifi_fw/bdwlan.bin 131072
+
+=== QCN9000 BDF files ===
+dump/partitions/extracted/mtd17_rootfs/filesystems/wifi_fw/qcn9000/bdwlan.ba0 131072
+dump/partitions/extracted/mtd17_rootfs/filesystems/wifi_fw/qcn9000/bdwlan.ba1 131072
+dump/partitions/extracted/mtd17_rootfs/filesystems/wifi_fw/qcn9000/bdwlan.ba2 131072
+dump/partitions/extracted/mtd17_rootfs/filesystems/wifi_fw/qcn9000/bdwlan.ba3 131072
+dump/partitions/extracted/mtd17_rootfs/filesystems/wifi_fw/qcn9000/bdwlan.ba4 131072
+dump/partitions/extracted/mtd17_rootfs/filesystems/wifi_fw/qcn9000/bdwlan.ba5 131072
+dump/partitions/extracted/mtd17_rootfs/filesystems/wifi_fw/qcn9000/bdwlan.ba6 131072
+dump/partitions/extracted/mtd17_rootfs/filesystems/wifi_fw/qcn9000/bdwlan.ba7 131072
+dump/partitions/extracted/mtd17_rootfs/filesystems/wifi_fw/qcn9000/bdwlan.ba8 131072
+dump/partitions/extracted/mtd17_rootfs/filesystems/wifi_fw/qcn9000/bdwlan.ba9 131072
+dump/partitions/extracted/mtd17_rootfs/filesystems/wifi_fw/qcn9000/bdwlan.baa 131072
+dump/partitions/extracted/mtd17_rootfs/filesystems/wifi_fw/qcn9000/bdwlan.bab 131072
+dump/partitions/extracted/mtd17_rootfs/filesystems/wifi_fw/qcn9000/bdwlan.bb0 131072
+dump/partitions/extracted/mtd17_rootfs/filesystems/wifi_fw/qcn9000/bdwlan.bb1 131072
+dump/partitions/extracted/mtd17_rootfs/filesystems/wifi_fw/qcn9000/bdwlan.bb2 131072
+dump/partitions/extracted/mtd17_rootfs/filesystems/wifi_fw/qcn9000/bdwlan.bb3 131072
+dump/partitions/extracted/mtd17_rootfs/filesystems/wifi_fw/qcn9000/bdwlan.bb4 131072
+dump/partitions/extracted/mtd17_rootfs/filesystems/wifi_fw/qcn9000/bdwlan.bin 131072

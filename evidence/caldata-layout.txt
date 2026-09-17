@@ -1,0 +1,16 @@
+# ZTE T5400 Wi-Fi calibration layout
+
+Source: dump/partitions/raw_dump/mtd13_ART.bin
+
+## Integrated IPQ5018 radio
+offset: 0x001000
+size:   0x020000
+247dbb92622b33a857ef5d6177cabd57e013d89178bf1356c82c2a80740ab3a2  analysis/caldata/ipq5018-caldata.bin
+
+## External QCN9024 PCIe radio
+PCI device ID: 0x1104
+stock firmware directory: qcn9000
+stock BDF: bdwlan.ba0
+offset: 0x026800
+size:   0x020000
+d21e97a65a5c8f6ecbc41a9831415409f33742c8e96c9a8f53cf618afe9bc215  analysis/caldata/qcn9000-caldata.bin

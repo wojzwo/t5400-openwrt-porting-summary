@@ -1,0 +1,51 @@
+ZTE T5400 NAND partition table
+Source: U-Boot `smeminfo`
+
+Flash geometry from smeminfo / nand info:
+  NAND:              Winbond W25N02JWZEIF
+  Total size:        0x10000000 bytes = 268435456 bytes = 256 MiB
+  Page size:         0x800 bytes = 2048 bytes
+  OOB size:          0x40 bytes = 64 bytes
+  Erase/block size:  0x20000 bytes = 131072 bytes = 128 KiB
+
+End inclusive = Start + Size - 1
+End exclusive = Start + Size (also the start of the next partition)
+
+No.  Name                    Start    End incl.    End excl.     Size hex   Size bytes      MiB
+-----------------------------------------------------------------------------------------------
+  0  0:SBL1           0x00000000 0x0007ffff 0x00080000 0x00080000       524288    0.500
+  1  0:MIBIB          0x00080000 0x000fffff 0x00100000 0x00080000       524288    0.500
+  2  0:BOOTCONFIG     0x00100000 0x0013ffff 0x00140000 0x00040000       262144    0.250
+  3  0:BOOTCONFIG1    0x00140000 0x0017ffff 0x00180000 0x00040000       262144    0.250
+  4  0:QSEE           0x00180000 0x0027ffff 0x00280000 0x00100000      1048576    1.000
+  5  0:QSEE_1         0x00280000 0x0037ffff 0x00380000 0x00100000      1048576    1.000
+  6  0:DEVCFG         0x00380000 0x003bffff 0x003c0000 0x00040000       262144    0.250
+  7  0:DEVCFG_1       0x003c0000 0x003fffff 0x00400000 0x00040000       262144    0.250
+  8  0:CDT            0x00400000 0x0043ffff 0x00440000 0x00040000       262144    0.250
+  9  0:CDT_1          0x00440000 0x0047ffff 0x00480000 0x00040000       262144    0.250
+ 10  0:APPSBLENV      0x00480000 0x004fffff 0x00500000 0x00080000       524288    0.500
+ 11  0:APPSBL         0x00500000 0x0065ffff 0x00660000 0x00160000      1441792    1.375
+ 12  0:APPSBL_1       0x00660000 0x007bffff 0x007c0000 0x00160000      1441792    1.375
+ 13  0:ART            0x007c0000 0x008bffff 0x008c0000 0x00100000      1048576    1.000
+ 14  0:TRAINING       0x008c0000 0x0093ffff 0x00940000 0x00080000       524288    0.500
+ 15  fota-flag        0x00940000 0x009dffff 0x009e0000 0x000a0000       655360    0.625
+ 16  mac              0x009e0000 0x00a5ffff 0x00a60000 0x00080000       524288    0.500
+ 17  rootfs           0x00a60000 0x0465ffff 0x04660000 0x03c00000     62914560   60.000
+ 18  rootfs_1         0x04660000 0x0825ffff 0x08260000 0x03c00000     62914560   60.000
+ 19  openwrt_data     0x08260000 0x09b5ffff 0x09b60000 0x01900000     26214400   25.000
+ 20  cfg-param        0x09b60000 0x0aa5ffff 0x0aa60000 0x00f00000     15728640   15.000
+ 21  log              0x0aa60000 0x0b95ffff 0x0b960000 0x00f00000     15728640   15.000
+ 22  oops             0x0b960000 0x0b9fffff 0x0ba00000 0x000a0000       655360    0.625
+ 23  fota             0x0ba00000 0x0fafffff 0x0fb00000 0x04100000     68157440   65.000
+ 24  reserved         0x0fb00000 0x0fffffff 0x10000000 0x00500000      5242880    5.000
+
+Partition count: 25
+Total covered:   0x10000000 bytes = 268435456 bytes = 256 MiB
+Last end excl.:  0x10000000
+
+UBI volumes reported by smeminfo inside rootfs (mtd17):
+  ubi vol 0  kernel
+  ubi vol 1  wifi_fw
+  ubi vol 2  bt_fw
+  ubi vol 3  ubi_rootfs
+  ubi vol 4  web

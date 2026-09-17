@@ -1,0 +1,35 @@
+IPQ5018# printenv
+baudrate=115200
+bootargs=console=ttyMSM0,115200n8
+bootcmd=bootipq
+bootdelay=1
+eth1addr=00:11:22:33:44:56
+ethact=eth0
+ethaddr=00:11:22:33:44:55
+fdt_high=0x4A400000
+fdtcontroladdr=4a9e4004
+fileaddr=44000000
+filesize=f00000
+flash_type=11
+fotamount=env set mtdids nand0=nand0;env set mtdparts mtdparts=nand0:0x2800000@0x5400000(fota);ubi part fota;ubifsmount ubi0:fota
+ipaddr=192.168.0.1
+lboot=run lsbl&&run lp&&run ltz&&run ld&&run lc&&run lu
+lc=tftpboot 0x44000000 ${dir}cdt.bin&&nand erase 0x400000 0x40000&&nand write $fileaddr 0x400000 0x40000
+ld=tftpboot 0x44000000 ${dir}devcfg.mbn&&nand erase 0x380000 0x40000&&nand write $fileaddr 0x380000 0x40000
+lp=tftpboot 0x44000000 ${dir}nand-system-partition-ipq5018.bin&&nand erase 0x80000 0x80000&&nand write $fileaddr 0x80000 0x80000
+lrs=tftpboot 0x44000000 ${dir}root_uImage_s&&nand erase 0xa60000 0x3c00000&&nand write $fileaddr 0xa60000 0x3c00000  
+lsbl=tftpboot 0x44000000 ${dir}sbl1_nand.mbn&&nand erase 0 0x80000&&nand write $fileaddr 0 0x80000
+ltz=tftpboot 0x44000000 ${dir}tz.mbn&&nand erase 0x180000 0x100000&&nand write $fileaddr 0x180000 0x100000
+lu=tftpboot 0x44000000 ${dir}uboot.bin&&nand erase 0x500000 0x160000&&nand write $fileaddr 0x500000 0x160000
+machid=8040001
+netmask=255.255.255.0
+serverip=192.168.0.22
+soc_hw_version=20180101
+soc_version_major=1
+soc_version_minor=1
+stderr=serial@78AF000
+stdin=serial@78AF000
+stdout=serial@78AF000
+
+Environment size: 1464/262140 bytes
+IPQ5018#
